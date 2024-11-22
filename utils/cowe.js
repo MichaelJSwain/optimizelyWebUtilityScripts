@@ -1,7 +1,9 @@
 const fs = require("fs");
 const fsp = fs.promises;
 const args = process.argv;
+require('dotenv').config()
 const { OPTLY_TOKEN } = process.env;
+console.log(process.env);
 
 if (args[2] && args[3]) {
   const getConfigFile = async () => {
@@ -18,16 +20,6 @@ if (args[2] && args[3]) {
   };
 
   const getConfigValues = async (configFile) => {
-    // const {
-    //   id,
-    //   name,
-    //   brand,
-    //   projectID,
-    //   activation,
-    //   variants,
-    //   OptimizelyPageID,
-    //   OptimizelyExperimentID,
-    // } = configFile;
 
     const data = {
       id: configFile.id,
@@ -39,11 +31,6 @@ if (args[2] && args[3]) {
       optimizelyPageID: configFile.OptimizelyPageID,
       optimizelyExperimentID: configFile.OptimizelyExperimentID,
     };
-
-    // variants.forEach((variant) => {
-    //   // console.log(variant);
-    //   getVariantCode(variant.js);
-    // });
 
     // get variant code
     for (const variant of data.variants) {
@@ -74,11 +61,6 @@ if (args[2] && args[3]) {
     if (!data.optimizelyPageID) {
       // create new optimizely page
       const pageID = await createOptimizelyPage(data);
-      console.log("returned page ID=", pageID);
-      // console.log("page", optimizelyPage);
-      // then store optimizely page id inside config file
-      // ...
-      // call createOptimizelyExperiment and pass page ID
       if (pageID) {
         const optimizelyExperiment = await createOptimizelyExperiment(
           `${data.id} - ${data.name}`,
@@ -95,45 +77,6 @@ if (args[2] && args[3]) {
     const expID = args[2];
     const brand = args[3];
     cowe();
-
-    // read config file for target experiment and brand
-    // fs.readFile(
-    //   `./experiments/${args[2]}/${args[3]}/config.json`,
-    //   { encoding: "utf8", flag: "r" },
-    //   function (err, data) {
-    //     // parse config file into js object
-    //     const parsedData = JSON.parse(data);
-
-    //     // destructure certain properties
-    //     const { id, name, projectID, activation, OptimizelyPageID } = parsedData;
-    //     console.log(!OptimizelyPageID);
-    //     // read activation code
-    //     fs.readFile(
-    //       `./experiments/${expID}/${brand}/targeting/${activation}`,
-    //       { encoding: "utf8", flag: "r" },
-    //       function (err, data) {
-    //         const callback = data;
-    //         const pageName = `${id} + ${name}`;
-
-    //         // call createOptimizelyPage and pass properties
-    //         if (!OptimizelyPageID) {
-    //           const res = createOptimizelyPage(pageName, projectID, callback);
-    //           console.log(res);
-    //         } else {
-    //           // use optimizely id found in config file
-    //           // const res = createOptimizelyExperiment(
-    //           //   expName,
-    //           //   pageID,
-    //           //   projectID,
-    //           //   variants
-    //           // );
-    //         }
-    //       }
-    //     );
-    //   }
-    // );
-
-    // PAGE - projectID, pagename (expID + expName, OPTLY_TOKEN, callback)
   } else {
     console.log("please specify the exp ID and brand");
   }
@@ -233,44 +176,6 @@ if (args[2] && args[3]) {
       "https://api.optimizely.com/v2/experiments"
     );
     console.log("exp result =", result);
-    // const options = {
-    //   method: "POST",
-    //   headers: {
-    //     accept: "application/json",
-    //     "content-type": "application/json",
-    //     authorization: OPTLY_TOKEN,
-    //   },
-    //   body: JSON.stringify({
-    //     audience_conditions: "everyone",
-    //     metrics: [
-    //       {
-    //         aggregator: "sum",
-    //         field: "revenue",
-    //         scope: "visitor",
-    //         winning_direction: "increasing",
-    //       },
-    //     ],
-    //     schedule: { time_zone: "UTC" },
-    //     type: "a/b",
-    //     changes: [
-    //       { type: "custom_code", value: "console.log('test')", async: false },
-    //       { type: "custom_css", value: ".selector {background: 'red'}" },
-    //     ],
-    //     description: "description placeholder",
-    //     name: expName,
-    //     page_ids: [pageID],
-    //     project_id: 14193350179,
-    //     traffic_allocation: 10000,
-    //     variations: variantsArray,
-    //   }),
-    // };
-
-    // const response = await fetch(
-    //   "https://api.optimizely.com/v2/experiments",
-    //   options
-    // );
-    // const experiment = await response.json();
-    // return experiment;
   };
 
   const postToOptimizely = async (reqBody, endpoint) => {
