@@ -66,15 +66,12 @@ const questions = [
   },
 ];
 
-const prompt = inquirer.createPromptModule();
-prompt(questions).then(async (answers) => {
-  let { brand, expID, expName, locales, numVariants } = answers;
+const checkExpIDexists = (expID) => {
+    const expIDexists = fs.existsSync(`./experiments/${expID}`);
+    return expIDexists;
+}
 
-  if (!fs.existsSync(`./experiments/${expID}`)) {
-        // Do something
-        console.log("scaffolding experiment...");
-
-
+const getBrandDetails = (brand) => {
     if (brand.toLowerCase() === "th") {
         brand = [
         {
@@ -100,6 +97,23 @@ prompt(questions).then(async (answers) => {
             projectID: 14193350179,
         },
         ];
+    }
+    return brand;
+}
+
+const prompt = inquirer.createPromptModule();
+prompt(questions).then(async (answers) => {
+  let { brand, expID, expName, locales, numVariants } = answers;
+
+  if (!checkExpIDexists(expID)) {
+    console.log("scaffolding experiment...");
+    brand = getBrandDetails(brand);
+    const data = {
+        brands: brand,
+        expID,
+        expName,
+        locales,
+        numVariants
     }
     createExperimentScaffolding(brand, expID, expName, locales, numVariants);
     console.log("experiment scaffolded!");

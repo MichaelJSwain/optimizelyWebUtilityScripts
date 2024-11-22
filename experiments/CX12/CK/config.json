@@ -1,0 +1,23 @@
+{
+    "state": "qa",
+    "id": "CX12",
+    "name": "tets",
+    "brand": "CK",
+    "variants": [
+        {
+            "name": "variant0",
+            "js": "/CX12/CK/variations/variation0/index.js",
+            "css": "/CX12/CK/variations/variation0/index.css"
+        }
+    ,
+        {
+            "name": "variant1",
+            "js": "/CX12/CK/variations/variation1/index.js",
+            "css": "/CX12/CK/variations/variation1/index.css"
+        }
+    ],
+    "activation": "callback.js",
+    "projectID": 14193350179,
+    "OptimizelyPageID": "",
+    "OptimizelyExperimentID": ""
+  }
