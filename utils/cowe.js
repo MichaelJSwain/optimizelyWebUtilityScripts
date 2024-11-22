@@ -10,83 +10,64 @@ const userInput = (args[2] &&
     (args[3].toUpperCase() === "TH" ||
     args[3].toUpperCase() === "CK" )) ? {expID: args[2], brand: args[3]} : false;
 
-if (userInput) {
-    console.log("valid user input");
-  const getConfigFile = async () => {
+
+const getConfigFile = async (expID, brand) => {
     let configFile = await fsp.readFile(
-      `./experiments/${userInput.expID}/${userInput.brand}/config.json`,
+      `./experiments/${expID}/${brand}/config.json`,
       "binary"
     );
     configFile = JSON.parse(configFile);
     return configFile;
-  };
+};
 
-  const getVariantCode = async (path) => {
-    let code = await fsp.readFile(`./experiments${path}`, "binary");
-  };
+// const getVariantCode = async (path) => {
+// let code = await fsp.readFile(`./experiments${path}`, "binary");
+// };
 
-  const getConfigValues = async (configFile) => {
+const getConfigValues = async (configFilecopy) => {
 
-    const data = {
-      id: configFile.id,
-      name: configFile.name,
-      brand: configFile.brand,
-      projectID: configFile.projectID,
-      activation: configFile.activation,
-      variants: configFile.variants,
-      optimizelyPageID: configFile.OptimizelyPageID,
-      optimizelyExperimentID: configFile.OptimizelyExperimentID,
-    };
+const data = {
+    id: configFilecopy.id,
+    name: configFilecopy.name,
+    brand: configFilecopy.brand,
+    projectID: configFilecopy.projectID,
+    activation: configFilecopy.activation,
+    variants: [...configFilecopy.variants],
+    optimizelyPageID: configFilecopy.OptimizelyPageID,
+    optimizelyExperimentID: configFilecopy.OptimizelyExperimentID,
+};
 
-    // get variant code
-    for (const variant of data.variants) {
-      const variantJS = await fsp.readFile(
-        `./experiments${variant.js}`,
-        "binary"
-      );
-      const variantCSS = await fsp.readFile(
-        `./experiments${variant.css}`,
-        "binary"
-      );
-      variant.js = variantJS;
-      variant.css = variantCSS;
-    }
-
-    // get activation code
-    const activationCode = await fsp.readFile(
-      `./experiments/${data.id}/${data.brand}/targeting/${data.activation}`,
-      "binary"
+console.log("data obj = ", data);
+const variantsArr = [];
+// get variant code
+for (const variant of data.variants) {
+    const v = {name: variant.name, js: "", css: ""};
+    v.js = await fsp.readFile(
+    `./experiments${variant.js}`,
+    "binary"
     );
-    data.activation = activationCode;
-    return data;
-  };
+    
+    v.css = await fsp.readFile(
+    `./experiments${variant.css}`,
+    "binary"
+    );
+    variantsArr.push(v)
+    // variant.js = variantJS;
+    // variant.css = variantCSS;
+}
 
-  const cowe = async () => {
-    const configFile = await getConfigFile();
-    const data = await getConfigValues(configFile);
-    if (!data.optimizelyPageID) {
-      // create new optimizely page
-    //   const pageID = await createOptimizelyPage(data);
-        const pageID = false;
-    if (pageID) {
-        const optimizelyExperiment = await createOptimizelyExperiment(
-          `${data.id} - ${data.name}`,
-          pageID,
-          data.projectID,
-          data.variants
-        );
-      }
-    } else {
-    }
-  };
+data.variants = variantsArr;
 
-  if (args[2] && args[3]) {
-    const expID = args[2];
-    const brand = args[3];
-    cowe();
-  } else {
-    console.log("please specify the exp ID and brand");
-  }
+// get activation code
+const activationCode = await fsp.readFile(
+    `./experiments/${data.id}/${data.brand}/targeting/${data.activation}`,
+    "binary"
+);
+data.activation = activationCode;
+return data;
+};
+
+
 
   const createOptimizelyPage = async ({ id, name, projectID, activation }) => {
     if (id && name && projectID) {
@@ -105,8 +86,6 @@ if (userInput) {
         body,
         "https://api.optimizely.com/v2/pages"
       );
-
-      console.log("returned optly page = ", optimizelyPage);
       return optimizelyPage.id ? optimizelyPage.id : false;
     }
   };
@@ -117,41 +96,37 @@ if (userInput) {
     projectID,
     variants
   ) => {
-    console.log(
-      "creating optimizely experiment... ",
-      expName,
-      pageID,
-      projectID,
-      variants
-    );
-
     const variantsArray = [];
+ 
 
     variants.forEach((variant) => {
+        const variantActions = variant.js || variant.css ? [{
+            changes: [],
+            page_id: pageID
+        }] : [{
+            page_id: pageID
+        }]
+        if (variant.js) {
+            variantActions[0].changes.push({
+                type: "custom_code",
+                value: `${variant.js}`,
+                async: false,
+              });
+        }
+        if (variant.css) {
+            variantActions[0].changes.push({ type: "custom_css", value: `${variant.css}` });
+        }
+        
       const variantData = {
         name: variant.name,
         status: "active",
         weight: Math.round(10000 / variants.length),
         description: "variant description",
         archived: false,
-        actions: [
-          {
-            changes: [
-              {
-                type: "custom_code",
-                value: "console.log('test')",
-                async: false,
-              },
-              { type: "custom_css", value: ".selector {background: 'red'}" },
-            ],
-            page_id: pageID,
-          },
-        ],
+        actions: variantActions,
       };
       variantsArray.push(variantData);
     });
-
-    console.log(variantsArray);
 
     const body = {
       audience_conditions: "everyone",
@@ -177,12 +152,13 @@ if (userInput) {
       variations: variantsArray,
     };
 
-    console.log("exp req body = ", body);
+    
+
     const result = await postToOptimizely(
       body,
       "https://api.optimizely.com/v2/experiments"
     );
-    console.log("exp result =", result);
+    return result;
   };
 
   const postToOptimizely = async (reqBody, endpoint) => {
@@ -200,4 +176,81 @@ if (userInput) {
     const pageID = await res.json();
     return pageID;
   };
-}
+
+  const cowe = async () => {
+    if (userInput) {
+        const {expID, brand} = userInput;
+        const configFile = await getConfigFile(expID, brand);
+        const data = await getConfigValues(configFile);
+        if (!data.optimizelyPageID) {
+            const pageID = await createOptimizelyPage(data);
+            console.log("pageID = ", pageID);
+            const optimizelyExperiment = await createOptimizelyExperiment(
+            `${data.id} - ${data.name}`,
+            pageID,
+            data.projectID,
+            data.variants
+            );
+            console.log("returned optly exp = ", optimizelyExperiment);
+
+            configFile.OptimizelyPageID = pageID;
+            configFile.OptimizelyExperimentID = optimizelyExperiment.id;
+            fs.writeFile(
+                `./experiments/${expID}/${brand}/config.json`,
+                JSON.stringify(configFile),
+                {
+                    encoding: "utf8",
+                },
+                (err) => {
+                    if (err) console.log(err);
+                    else {
+                        console.log("File written successfully\n");
+                        console.log("The written file has the following contents:");
+                        // console.log(fs.readFileSync("movies.txt", "utf8"));
+                    }
+                }
+            );
+        } else {
+            console.log("existing page id");
+        }
+
+        
+            // console.log("updating optimizely page")
+            // const updatedConfig = configFile.variants[0];
+            // console.log(configFile)
+            // configFile.OptimizelyPageID = 82349042390890238490;
+            // console.log('config after changes',  JSON.stringify(configFile));
+          
+            // fs.writeFile(
+            //     `./experiments/${expID}/${brand}/config.json`,
+            //     JSON.stringify(configFile),
+            //     {
+            //         encoding: "utf8",
+            //     },
+            //     (err) => {
+            //         if (err) console.log(err);
+            //         else {
+            //             console.log("File written successfully\n");
+            //             console.log("The written file has the following contents:");
+            //             // console.log(fs.readFileSync("movies.txt", "utf8"));
+            //         }
+            //     }
+            // );
+//               OptimizelyPageID: '',
+//   OptimizelyExperimentID: ''
+            // create new optimizely page
+            // const pageID = await createOptimizelyPage(data);
+            // if (pageID) {
+            //     const optimizelyExperiment = await createOptimizelyExperiment(
+            //     `${data.id} - ${data.name}`,
+            //     pageID,
+            //     data.projectID,
+            //     data.variants
+            //     );
+            //     console.log("returned optly exp = ", optimizelyExperiment);
+            // }
+        // } else {
+        // }
+    }
+    };
+    cowe();

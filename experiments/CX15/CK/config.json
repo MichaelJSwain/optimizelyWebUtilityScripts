@@ -1,0 +1,23 @@
+{
+    "state": "qa",
+    "id": "CX15",
+    "name": "test",
+    "brand": "CK",
+    "variants": [
+        {
+            "name": "variant0",
+            "changesjs": "/CX15/CK/variations/variation0/index.js",
+            "changescss": "/CX15/CK/variations/variation0/index.css"
+        }
+    ,
+        {
+            "name": "variant1",
+            "changejs": "/CX15/CK/variations/variation1/index.js",
+            "changecss": "/CX15/CK/variations/variation1/index.css"
+        }
+    ],
+    "activation": "callback.js",
+    "projectID": 14193350179,
+    "OptimizelyPageID": "",
+    "OptimizelyExperimentID": ""
+  }
