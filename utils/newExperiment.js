@@ -115,7 +115,7 @@ prompt(questions).then(async (answers) => {
         locales,
         numVariants
     }
-    createExperimentScaffolding(brand, expID, expName, locales, numVariants);
+    createExperimentScaffolding(data);
     console.log("experiment scaffolded!");
     } else {
         console.log(`The directory with experiment ID '${expID}' already exists. Would you like to create an iteration experiment?`);
@@ -124,28 +124,28 @@ prompt(questions).then(async (answers) => {
 
 // scaffold experiment in IDE
 const createExperimentScaffolding = (
-  brand,
+  {brands,
   expID,
   expName,
   locales,
-  numVariants
+  numVariants}
 ) => {
   numVariants = parseInt(numVariants);
 
-  brand.forEach((b) => {
+  brands.forEach((brand) => {
     // create brand dir
-    fs.mkdirSync(`./experiments/${expID}/${b.name}`, {
+    fs.mkdirSync(`./experiments/${expID}/${brand.name}`, {
       recursive: true,
     });
 
-    fs.mkdirSync(`./experiments/${expID}/${b.name}/variations`, {
+    fs.mkdirSync(`./experiments/${expID}/${brand.name}/variations`, {
       recursive: true,
     });
 
     for (let i = 0; i < numVariants; i++) {
       // create variant dir
       fs.mkdirSync(
-        `./experiments/${expID}/${b.name}/variations/variation${i}`,
+        `./experiments/${expID}/${brand.name}/variations/variation${i}`,
         {
           recursive: true,
         }
@@ -153,14 +153,14 @@ const createExperimentScaffolding = (
 
       // create variant files inside variant dir
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/variations/variation${i}/index.js`,
+        `./experiments/${expID}/${brand.name}/variations/variation${i}/index.js`,
         "",
         (err, res) => {
           if (err) console.log(err);
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/variations/variation${i}/index.css`,
+        `./experiments/${expID}/${brand.name}/variations/variation${i}/index.css`,
         "",
         (err, res) => {
           if (err) console.log(err);
@@ -168,18 +168,18 @@ const createExperimentScaffolding = (
       );
 
       // create shared folder and files
-      fs.mkdirSync(`./experiments/${expID}/${b.name}/sharedCode`, {
+      fs.mkdirSync(`./experiments/${expID}/${brand.name}/sharedCode`, {
         recursive: true,
       });
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/sharedCode/shared.js`,
+        `./experiments/${expID}/${brand.name}/sharedCode/shared.js`,
         "",
         (err, res) => {
           if (err) console.log(err);
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/sharedCode/shared.css`,
+        `./experiments/${expID}/${brand.name}/sharedCode/shared.css`,
         "",
         (err, res) => {
           if (err) console.log(err);
@@ -187,25 +187,25 @@ const createExperimentScaffolding = (
       );
 
       // create targeting folder and files
-      fs.mkdirSync(`./experiments/${expID}/${b.name}/targeting`, {
+      fs.mkdirSync(`./experiments/${expID}/${brand.name}/targeting`, {
         recursive: true,
       });
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/targeting/callback.js`,
+        `./experiments/${expID}/${brand.name}/targeting/callback.js`,
         "",
         (err, res) => {
           if (err) console.log(err);
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/targeting/audiences.json`,
+        `./experiments/${expID}/${brand.name}/targeting/audiences.json`,
         "",
         (err, res) => {
           if (err) console.log(err);
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/targeting/urls.js`,
+        `./experiments/${expID}/${brand.name}/targeting/urls.js`,
         "",
         (err, res) => {
           if (err) console.log(err);
@@ -217,11 +217,11 @@ const createExperimentScaffolding = (
         expID,
         expName,
         numVariants,
-        b.name,
-        b.projectID
+        brand.name,
+        brand.projectID
       );
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/config.json`,
+        `./experiments/${expID}/${brand.name}/config.json`,
         config,
         (err, res) => {
           if (err) console.log(err);

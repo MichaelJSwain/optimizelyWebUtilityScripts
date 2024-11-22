@@ -279,7 +279,7 @@ if (args[2] && args[3]) {
       headers: {
         accept: "application/json",
         "content-type": "application/json",
-        authorization: "",
+        authorization: OPTLY_TOKEN,
       },
       body: JSON.stringify(reqBody),
     };
