@@ -3,12 +3,18 @@ const fsp = fs.promises;
 const args = process.argv;
 require('dotenv').config()
 const { OPTLY_TOKEN } = process.env;
-console.log(process.env);
 
-if (args[2] && args[3]) {
+const userInput = (args[2] && 
+    args[2].toUpperCase().includes("CX") &&
+    args[3] &&
+    (args[3].toUpperCase() === "TH" ||
+    args[3].toUpperCase() === "CK" )) ? {expID: args[2], brand: args[3]} : false;
+
+if (userInput) {
+    console.log("valid user input");
   const getConfigFile = async () => {
     let configFile = await fsp.readFile(
-      `./experiments/${args[2]}/${args[3]}/config.json`,
+      `./experiments/${userInput.expID}/${userInput.brand}/config.json`,
       "binary"
     );
     configFile = JSON.parse(configFile);
@@ -60,8 +66,9 @@ if (args[2] && args[3]) {
     const data = await getConfigValues(configFile);
     if (!data.optimizelyPageID) {
       // create new optimizely page
-      const pageID = await createOptimizelyPage(data);
-      if (pageID) {
+    //   const pageID = await createOptimizelyPage(data);
+        const pageID = false;
+    if (pageID) {
         const optimizelyExperiment = await createOptimizelyExperiment(
           `${data.id} - ${data.name}`,
           pageID,
