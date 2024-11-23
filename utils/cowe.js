@@ -189,6 +189,26 @@ const variantsArr = [];
     return pageID;
   };
 
+  const updateConfigFile = (expID, brand, configFile, pageID, experimentID) => {
+            configFile.OptimizelyPageID = pageID;
+            configFile.OptimizelyExperimentID = experimentID;
+            fs.writeFile(
+                `./experiments/${expID}/${brand}/config.json`,
+                JSON.stringify(configFile),
+                {
+                    encoding: "utf8",
+                },
+                (err) => {
+                    if (err) console.log(err);
+                    else {
+                        console.log("File written successfully\n");
+                        console.log("The written file has the following contents:");
+                        // console.log(fs.readFileSync("movies.txt", "utf8"));
+                    }
+                }
+            );
+  }
+
   const cowe = async () => {
     if (userInput) {
         const {expID, brand} = userInput;
@@ -209,24 +229,8 @@ const variantsArr = [];
             customCode.variants
             );
             console.log("returned optly exp ID = ", experimentID);
+            updateConfigFile(expID, brand, configFile, pageID, experimentID)
 
-            // configFile.OptimizelyPageID = pageID;
-            // configFile.OptimizelyExperimentID = experimentID;
-            // fs.writeFile(
-            //     `./experiments/${expID}/${brand}/config.json`,
-            //     JSON.stringify(configFile),
-            //     {
-            //         encoding: "utf8",
-            //     },
-            //     (err) => {
-            //         if (err) console.log(err);
-            //         else {
-            //             console.log("File written successfully\n");
-            //             console.log("The written file has the following contents:");
-            //             // console.log(fs.readFileSync("movies.txt", "utf8"));
-            //         }
-            //     }
-            // );
         } else {
             console.log("existing page id");
         }
