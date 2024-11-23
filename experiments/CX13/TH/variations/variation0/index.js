@@ -1,1 +1,0 @@
-console.log("CX13 TH CONTROL");

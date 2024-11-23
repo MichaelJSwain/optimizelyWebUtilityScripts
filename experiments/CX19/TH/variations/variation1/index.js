@@ -1,1 +1,0 @@
-console.log("CX19 V1 JS");

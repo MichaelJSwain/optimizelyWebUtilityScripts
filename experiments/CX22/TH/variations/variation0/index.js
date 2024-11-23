@@ -1,1 +1,0 @@
-console.log("cx22 control js");

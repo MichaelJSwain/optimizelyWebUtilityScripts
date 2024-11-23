@@ -20,25 +20,7 @@ const getConfigFile = async (expID, brand) => {
     return configFile;
 };
 
-// const getVariantCode = async (path) => {
-// let code = await fsp.readFile(`./experiments${path}`, "binary");
-// };
-
 const getCustomCode = async (id, brand, variants, activation) => {
-
-// const data = {
-//     id: configFilecopy.id,
-//     name: configFilecopy.name,
-//     brand: configFilecopy.brand,
-//     projectID: configFilecopy.projectID,
-//     activation: configFilecopy.activation,
-//     variants: [...configFilecopy.variants],
-//     optimizelyPageID: configFilecopy.OptimizelyPageID,
-//     optimizelyExperimentID: configFilecopy.OptimizelyExperimentID,
-// };
-
-console.log("variants = ", variants);
-console.log("activation = ", activation);
 const variantsArr = [];
 // get variant code
     for (const variant of variants) {
@@ -53,8 +35,6 @@ const variantsArr = [];
         "binary"
         );
         variantsArr.push(v)
-        // variant.js = variantJS;
-        // variant.css = variantCSS;
     }
 
 // get activation code
@@ -67,18 +47,12 @@ const variantsArr = [];
         variants: variantsArr,
         activation: activationCallback
     }
-    console.log("result = ", result);
     return result;
-    // data.activation = activationCode;
-    // return data;
 };
 
-
-
-  const createOptimizelyPage = async (expName, projectID, activation) => {
-    console.log("creating optly page = ", expName, projectID, activation);
+const createOptimizelyPage = async (expName, projectID, activation) => {
     if (expName && projectID) {
-      const body = {
+        const body = {
         archived: false,
         category: "other",
         activation_code: `${activation}`,
@@ -86,20 +60,18 @@ const variantsArr = [];
         name: `${expName}`,
         project_id: projectID,
         activation_type: "callback",
-      };
-      console.log(body);
-      return 99999999999999;
-    //   const optimizelyPage = await postToOptimizely(
-    //     body,
-    //     "https://api.optimizely.com/v2/pages"
-    //   );
-    //   return optimizelyPage.id ? optimizelyPage.id : false;
+        };
+        
+        const optimizelyPage = await postToOptimizely(
+        body,
+        "https://api.optimizely.com/v2/pages"
+        );
+        return optimizelyPage.id
     }
-  };
+};
 
-  const createVariantActions = (pageID, variants) => {
+const createVariantActions = (pageID, variants) => {
     const variantsArray = [];
- 
 
     variants.forEach((variant) => {
         const variantActions = variant.js || variant.css ? [{
@@ -113,24 +85,24 @@ const variantsArr = [];
                 type: "custom_code",
                 value: `${variant.js}`,
                 async: false,
-              });
+                });
         }
         if (variant.css) {
             variantActions[0].changes.push({ type: "custom_css", value: `${variant.css}` });
         }
         
-      const variantData = {
+        const variantData = {
         name: variant.name,
         status: "active",
         weight: Math.round(10000 / variants.length),
         description: "variant description",
         archived: false,
         actions: variantActions,
-      };
-      variantsArray.push(variantData);
+        };
+        variantsArray.push(variantData);
     });
     return variantsArray;
-  }
+}
 
   const createOptimizelyExperiment = async (
     expName,
@@ -164,13 +136,11 @@ const variantsArr = [];
       variations: variantsArray,
     };
 
-    return 33333333333333;
-
-    // const result = await postToOptimizely(
-    //   body,
-    //   "https://api.optimizely.com/v2/experiments"
-    // );
-    // return result;
+    const optimizelyExp = await postToOptimizely(
+      body,
+      "https://api.optimizely.com/v2/experiments"
+    );
+    return optimizelyExp.id;
   };
 
   const postToOptimizely = async (reqBody, endpoint) => {
@@ -203,7 +173,6 @@ const variantsArr = [];
                     else {
                         console.log("File written successfully\n");
                         console.log("The written file has the following contents:");
-                        // console.log(fs.readFileSync("movies.txt", "utf8"));
                     }
                 }
             );
@@ -218,17 +187,13 @@ const variantsArr = [];
         const customCode = await getCustomCode(expID, brand, variants, activation);
         
         if (!OptimizelyPageID) {
-            console.log("no existing page id");
             const pageID = await createOptimizelyPage(expName, projectID, customCode.activation);
-            console.log(pageID);
-            // console.log("pageID = ", pageID);
             const experimentID = await createOptimizelyExperiment(
             expName,
             pageID,
             projectID,
             customCode.variants
             );
-            console.log("returned optly exp ID = ", experimentID);
             updateConfigFile(expID, brand, configFile, pageID, experimentID)
 
         } else {
