@@ -59,9 +59,24 @@ const variantsArr = [];
     );
     const parsedCallback = parseCustomCode(activationCallback);
 
+    // get shared code
+    const sharedJS = await fsp.readFile(
+      `./experiments/${id}/${brand}/sharedCode/shared.js`,
+      "binary"
+  );
+
+  const sharedCSS = await fsp.readFile(
+      `./experiments/${id}/${brand}/sharedCode/shared.css`,
+      "binary"
+  );
+
     const result = {
         variants: variantsArr,
-        activation: parsedCallback
+        activation: parsedCallback,
+        sharedCode: {
+          js: sharedJS,
+          css: sharedCSS,
+        }
     }
     return result;
 };
@@ -120,12 +135,24 @@ const createVariantActions = (pageID, variants) => {
     });
     return variantsArray;
 }
+const createSharedCode = (sharedCode) => {
+    const res = [];
+    if (sharedCode.js) {
+      res.push({ type: "custom_code", value: sharedCode.js, async: false })
+    }
+    if (sharedCode.css) {
+      res.push({ type: "custom_css", value: sharedCode.css, async: false })
+    }
+    console.log("sharedCode res ", res);
+    return res;
+};
 
   const createOptimizelyExperiment = async (
     expName,
     pageID,
     projectID,
-    variants
+    variants,
+    sharedCode
   ) => {
     const variantsArray = createVariantActions(pageID, variants);
 
@@ -141,10 +168,6 @@ const createVariantActions = (pageID, variants) => {
       ],
       schedule: { time_zone: "UTC" },
       type: "a/b",
-      changes: [
-        { type: "custom_code", value: "console.log('test')", async: false },
-        { type: "custom_css", value: ".selector {background: 'red'}" },
-      ],
       description: "description placeholder",
       name: expName,
       page_ids: [pageID],
@@ -152,7 +175,10 @@ const createVariantActions = (pageID, variants) => {
       traffic_allocation: 10000,
       variations: variantsArray,
     };
-
+    if (sharedCode.length) {
+      body.changes = sharedCode;
+    }
+    console.log("exp req body = ", body)
     const optimizelyExp = await postToOptimizely(
       body,
       "https://api.optimizely.com/v2/experiments"
@@ -173,6 +199,7 @@ const createVariantActions = (pageID, variants) => {
     };
 
     const res = await fetch(endpoint, options);
+    console.log("post result ", res);
     const pageID = await res.json();
     return pageID;
   };
@@ -205,15 +232,17 @@ const createVariantActions = (pageID, variants) => {
         if (!OptimizelyExperimentID) {
           const expName = `${expID} - ${name}`;
           const customCode = await getCustomCode(expID, brand, variants, activation);
-          console.log("custom code = ", customCode);
+          const parsedSharedCode = createSharedCode(customCode.sharedCode);
+          console.log(parsedSharedCode);
           if (!OptimizelyPageID) {
               const pageID = await createOptimizelyPage(expName, projectID, customCode.activation);
-              console.log("page created = ", pageID);
+              // console.log("page created = ", pageID);
               const experimentID = await createOptimizelyExperiment(
               expName,
               pageID,
               projectID,
-              customCode.variants
+              customCode.variants,
+              parsedSharedCode
               );
               console.log("experiment created = ", experimentID);
               updateConfigFile(expID, brand, configFile, pageID, experimentID)

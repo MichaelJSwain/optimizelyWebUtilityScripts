@@ -1,6 +1,6 @@
-const exp = {
+const exp2 = {
     init: function() {
         console.log("exp init")
     }
 }; 
-exp.init();
+exp2.init();
