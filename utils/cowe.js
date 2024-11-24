@@ -20,20 +20,35 @@ const getConfigFile = async (expID, brand) => {
     return configFile;
 };
 
+const parseCustomCode = (code) => {
+  // remove escape characters to prevent request rejection
+  // const parsedCode = code.replace(/\s+/g, '');
+  return code;
+};
+
 const getCustomCode = async (id, brand, variants, activation) => {
 const variantsArr = [];
 // get variant code
     for (const variant of variants) {
         const v = {name: variant.name, js: "", css: ""};
-        v.js = await fsp.readFile(
-        `./experiments${variant.js}`,
-        "binary"
-        );
-        
-        v.css = await fsp.readFile(
+        // v.js = await fsp.readFile(
+        // `./experiments${variant.js}`,
+        // "binary"
+        // );
+        const js = await fsp.readFile(
+          `./experiments${variant.js}`,
+          "binary"
+          );
+        const parsedJS = parseCustomCode(js);
+        v.js = parsedJS;
+
+        const css = await fsp.readFile(
         `./experiments${variant.css}`,
         "binary"
         );
+        const parsedCSS = parseCustomCode(css);
+        v.css = parsedCSS;
+
         variantsArr.push(v)
     }
 
@@ -42,10 +57,11 @@ const variantsArr = [];
         `./experiments/${id}/${brand}/targeting/${activation}`,
         "binary"
     );
+    const parsedCallback = parseCustomCode(activationCallback);
 
     const result = {
         variants: variantsArr,
-        activation: activationCallback
+        activation: parsedCallback
     }
     return result;
 };
@@ -66,6 +82,7 @@ const createOptimizelyPage = async (expName, projectID, activation) => {
         body,
         "https://api.optimizely.com/v2/pages"
         );
+        console.log("optlypage = ", optimizelyPage);
         return optimizelyPage.id
     }
 };
@@ -140,6 +157,7 @@ const createVariantActions = (pageID, variants) => {
       body,
       "https://api.optimizely.com/v2/experiments"
     );
+    console.log(optimizelyExp);
     return optimizelyExp.id;
   };
 
@@ -187,15 +205,17 @@ const createVariantActions = (pageID, variants) => {
         if (!OptimizelyExperimentID) {
           const expName = `${expID} - ${name}`;
           const customCode = await getCustomCode(expID, brand, variants, activation);
-          
+          console.log("custom code = ", customCode);
           if (!OptimizelyPageID) {
               const pageID = await createOptimizelyPage(expName, projectID, customCode.activation);
+              console.log("page created = ", pageID);
               const experimentID = await createOptimizelyExperiment(
               expName,
               pageID,
               projectID,
               customCode.variants
               );
+              console.log("experiment created = ", experimentID);
               updateConfigFile(expID, brand, configFile, pageID, experimentID)
 
           } else {
