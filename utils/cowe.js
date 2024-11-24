@@ -182,23 +182,30 @@ const createVariantActions = (pageID, variants) => {
     if (userInput) {
         const {expID, brand} = userInput;
         const configFile = await getConfigFile(expID, brand);
-        const {name, variants, activation, projectID, OptimizelyPageID} = configFile;
-        const expName = `${expID} - ${name}`;
-        const customCode = await getCustomCode(expID, brand, variants, activation);
-        
-        if (!OptimizelyPageID) {
-            const pageID = await createOptimizelyPage(expName, projectID, customCode.activation);
-            const experimentID = await createOptimizelyExperiment(
-            expName,
-            pageID,
-            projectID,
-            customCode.variants
-            );
-            updateConfigFile(expID, brand, configFile, pageID, experimentID)
+        const {name, variants, activation, projectID, OptimizelyPageID, OptimizelyExperimentID} = configFile;
 
+        if (!OptimizelyExperimentID) {
+          const expName = `${expID} - ${name}`;
+          const customCode = await getCustomCode(expID, brand, variants, activation);
+          
+          if (!OptimizelyPageID) {
+              const pageID = await createOptimizelyPage(expName, projectID, customCode.activation);
+              const experimentID = await createOptimizelyExperiment(
+              expName,
+              pageID,
+              projectID,
+              customCode.variants
+              );
+              updateConfigFile(expID, brand, configFile, pageID, experimentID)
+
+          } else {
+              console.log("A pre-existing ID for an Optimizely page was found in the config file");
+          }
         } else {
-            console.log("existing page id");
+          console.log("A pre-existing ID for an Optimizely experiment was found in the config file");
         }
+    } else {
+      console.log("please specify the ID and brand for the Optimizely experiment you'd like to create e.g. CX100 TH")
     }
     };
     cowe();
