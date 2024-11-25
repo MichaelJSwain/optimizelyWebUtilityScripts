@@ -65,13 +65,12 @@ const getCustomCode = async (id, brand, variants, activation) => {
     "binary"
   );
 
+  const sharedCode = createSharedCode(sharedJS, sharedCSS);
+
   const result = {
     variants: variantsArr,
     activation: parsedCallback,
-    sharedCode: {
-      js: sharedJS,
-      css: sharedCSS,
-    },
+    sharedCode: sharedCode,
   };
   return result;
 };
@@ -139,13 +138,13 @@ const createVariantActions = (pageID, variants) => {
   });
   return variantsArray;
 };
-const createSharedCode = (sharedCode) => {
+const createSharedCode = (sharedJS, sharedCSS) => {
   const res = [];
-  if (sharedCode.js) {
-    res.push({ type: "custom_code", value: sharedCode.js, async: false });
+  if (sharedJS) {
+    res.push({ type: "custom_code", value: sharedJS, async: false });
   }
-  if (sharedCode.css) {
-    res.push({ type: "custom_css", value: sharedCode.css, async: false });
+  if (sharedCSS) {
+    res.push({ type: "custom_css", value: sharedCSS, async: false });
   }
   
   return res;
@@ -249,7 +248,6 @@ const cowe = async () => {
         variants,
         activation
       );
-      const parsedSharedCode = createSharedCode(customCode.sharedCode);
       
       if (!OptimizelyPageID) {
         console.log(`Creating page for ${expID} in Optimizely...`);
@@ -267,7 +265,7 @@ const cowe = async () => {
               page.id,
               projectID,
               customCode.variants,
-              parsedSharedCode
+              customCode.sharedCode
             );
             if (experiment.id) {
               console.log(`Experiment ${experiment.id} for ${expID} created in Optimizely.`);
