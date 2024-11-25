@@ -32,10 +32,7 @@ const getCustomCode = async (id, brand, variants, activation) => {
   // get variant code
   for (const variant of variants) {
     const v = { name: variant.name, js: "", css: "" };
-    // v.js = await fsp.readFile(
-    // `./experiments${variant.js}`,
-    // "binary"
-    // );
+
     const js = await fsp.readFile(`./experiments${variant.js}`, "binary");
     const parsedJS = validateCustomCode(js);
     v.js = parsedJS;
@@ -59,12 +56,10 @@ const getCustomCode = async (id, brand, variants, activation) => {
     `./experiments/${id}/${brand}/sharedCode/shared.js`,
     "binary"
   );
-
   const sharedCSS = await fsp.readFile(
     `./experiments/${id}/${brand}/sharedCode/shared.css`,
     "binary"
   );
-
   const sharedCode = createSharedCode(sharedJS, sharedCSS);
 
   const result = {
@@ -221,7 +216,6 @@ const updateConfigFile = (expID, brand, configFile, key, resourceID) => {
       if (err) console.log(err);
       else {
         console.log("File written successfully\n");
-        console.log("The written file has the following contents:");
       }
     }
   );
