@@ -71,11 +71,16 @@ const getCustomCode = async (id, brand, variants, activation) => {
 };
 
 
-const getAudiences = async (path) => {
+const getAudiences = async (path, brand) => {
   /* OPTLY AUDIENCE ID
-    - QA = 6161659085979648
-    - Destop = 6533414275252224
-    - Mobile = 4873116552265728
+    -TH
+      - QA = 6161659085979648
+      - Destop = 6533414275252224
+      - Mobile = 4873116552265728
+    -CK
+      - QA = 5226595548397568
+      - Destop = 5157423925690368
+      - Mobile = 4991908099915776
   */
   const audiences = await fsp.readFile(path, "binary");
   if (audiences) {
@@ -85,23 +90,28 @@ const getAudiences = async (path) => {
     ]
     if (audienceObj.qa) {
       optimizelyAudiences.push({
-        "audience_id": 6161659085979648
+        "audience_id": brand.toUpperCase() === "TH" ? 6161659085979648 : 5226595548397568
       });
     }
     if (audienceObj.desktop) {
       optimizelyAudiences.push({
-        "audience_id": 6533414275252224
+        "audience_id": brand.toUpperCase() === "TH" ? 6533414275252224 : 5157423925690368
       });
     }
     if (audienceObj.mobile) {
       optimizelyAudiences.push({
-        "audience_id": 4873116552265728
+        "audience_id": brand.toUpperCase() === "TH" ? 4873116552265728 : 4991908099915776
       });
     }
 
     optimizelyAudiences = JSON.stringify(optimizelyAudiences);
     return optimizelyAudiences;
   }
+};
+
+const getCustomGoals = async (path) => {
+  const customGoals = await fsp.readFile(path, "binary");
+  return customGoals;
 };
 
 const createOptimizelyPage = async (expName, projectID, activation) => {
@@ -116,11 +126,11 @@ const createOptimizelyPage = async (expName, projectID, activation) => {
       activation_type: "callback",
     };
 
-    const optimizelyPage = await postToOptimizely(
-      body,
-      "https://api.optimizely.com/v2/pages"
-    );
-    return optimizelyPage;
+    // const optimizelyPage = await postToOptimizely(
+    //   body,
+    //   "https://api.optimizely.com/v2/pages"
+    // );
+    // return optimizelyPage;
   }
 };
 
@@ -266,6 +276,7 @@ const cowe = async () => {
       audiences,
       variants,
       activation,
+      customGoals,
       projectID,
       OptimizelyPageID,
       OptimizelyExperimentID,
@@ -280,8 +291,8 @@ const cowe = async () => {
         activation
       );
 
-      const optlyAudiences = await getAudiences(audiences);
-      
+      const optlyAudiences = await getAudiences(audiences, brand);
+      console.log(optlyAudiences);
       if (!OptimizelyPageID) {
         console.log(`Creating page for ${expID} in Optimizely...`);
         const page = await createOptimizelyPage(
