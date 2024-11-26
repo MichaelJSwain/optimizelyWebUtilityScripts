@@ -49,6 +49,7 @@ const getCustomCode = async (id, brand, variants, activation) => {
     `./experiments/${id}/${brand}/targeting/${activation}`,
     "binary"
   );
+  console.log("activation callback => ", activationCallback);
   const parsedCallback = validateCustomCode(activationCallback);
 
   // get shared code
@@ -109,9 +110,22 @@ const getAudiences = async (path, brand) => {
   }
 };
 
-const getCustomGoals = async (path) => {
-  const customGoals = await fsp.readFile(path, "binary");
-  return customGoals;
+const getCustomGoals = async (expID, brand) => {
+  const customGoals = await fsp.readFile(`./experiments/${expID}/${brand}/customGoals.json`, "binary");
+  const parsedCustomGoals = JSON.parse(customGoals);
+  if (parsedCustomGoals && parsedCustomGoals.length) {
+    const optimizelyMetrics = parsedCustomGoals.map(goal => {
+      return {
+        event_id: goal.id,
+        aggregator: 'unique',
+        scope: 'visitor',
+        winning_direction: 'increasing'
+      }
+    });
+    return optimizelyMetrics;
+  } else {
+    return []
+  }
 };
 
 const createOptimizelyPage = async (expName, projectID, activation) => {
@@ -126,11 +140,11 @@ const createOptimizelyPage = async (expName, projectID, activation) => {
       activation_type: "callback",
     };
 
-    // const optimizelyPage = await postToOptimizely(
-    //   body,
-    //   "https://api.optimizely.com/v2/pages"
-    // );
-    // return optimizelyPage;
+    const optimizelyPage = await postToOptimizely(
+      body,
+      "https://api.optimizely.com/v2/pages"
+    );
+    return optimizelyPage;
   }
 };
 
@@ -194,6 +208,7 @@ const createOptimizelyExperiment = async (
   pageID,
   projectID,
   audiences,
+  goals,
   variants,
   sharedCode
 ) => {
@@ -222,6 +237,10 @@ const createOptimizelyExperiment = async (
   if (sharedCode.length) {
     body.changes = sharedCode;
   }
+  if (goals.length) {
+    body.metrics = goals;
+  }
+  console.log(body);
 
   const optimizelyExp = await postToOptimizely(
     body,
@@ -292,6 +311,8 @@ const cowe = async () => {
       );
 
       const optlyAudiences = await getAudiences(audiences, brand);
+      const optlyGoals = await getCustomGoals(expID, brand);
+      
       console.log(optlyAudiences);
       if (!OptimizelyPageID) {
         console.log(`Creating page for ${expID} in Optimizely...`);
@@ -300,6 +321,7 @@ const cowe = async () => {
           projectID,
           customCode.activation
         );
+        // const page = {id: 293090843, code: "", message: ""};
         if (page.id) {
             updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', page.id);
             console.log(`Page ${page.id} for ${expID} created in Optimizely.`);
@@ -309,6 +331,7 @@ const cowe = async () => {
               page.id,
               projectID,
               optlyAudiences,
+              optlyGoals,
               customCode.variants,
               customCode.sharedCode
             );
