@@ -41,19 +41,6 @@ const questions = [
   },
   {
     type: "input",
-    name: "locales",
-    message:
-      "Please enter the locales targeted by this experiment (UK|NL|DE|FR|IT|ES|PL etc.):",
-    validate: (val) => {
-      if (val.length < 1) {
-        return "Please enter a URL";
-      } else {
-        return true;
-      }
-    },
-  },
-  {
-    type: "input",
     name: "numVariants",
     message: "Number of variants (including control):",
     validate: (val) => {
@@ -66,86 +53,63 @@ const questions = [
   },
 ];
 
-const checkExpIDexists = (expID) => {
-    const expIDexists = fs.existsSync(`./experiments/${expID}`);
-    return expIDexists;
-}
-
-const getBrandDetails = (brand) => {
-    if (brand.toLowerCase() === "th") {
-        brand = [
-        {
-            name: "TH",
-            projectID: 14193350179,
-        },
-        ];
-    } else if (brand.toLowerCase() === "ck") {
-        brand = [
-        {
-            name: "CK",
-            projectID: 14193350179,
-        },
-        ];
-    } else {
-        brand = [
-        {
-            name: "TH",
-            projectID: 14193350179,
-        },
-        {
-            name: "CK",
-            projectID: 14193350179,
-        },
-        ];
-    }
-    return brand;
-}
-
 const prompt = inquirer.createPromptModule();
 prompt(questions).then(async (answers) => {
   let { brand, expID, expName, locales, numVariants } = answers;
 
-  if (!checkExpIDexists(expID)) {
-    console.log("scaffolding experiment...");
-    brand = getBrandDetails(brand);
-    const data = {
-        brands: brand,
-        expID,
-        expName,
-        locales,
-        numVariants
-    }
-    createExperimentScaffolding(data);
-    console.log("experiment scaffolded!");
-    } else {
-        console.log(`The directory with experiment ID '${expID}' already exists. Would you like to create an iteration experiment?`);
-    }
+  if (brand.toLowerCase() === "th") {
+    brand = [
+      {
+        name: "TH",
+        projectID: 14193350179,
+      },
+    ];
+  } else if (brand.toLowerCase() === "ck") {
+    brand = [
+      {
+        name: "CK",
+        projectID: 4639710178443264,
+      },
+    ];
+  } else {
+    brand = [
+      {
+        name: "TH",
+        projectID: 14193350179,
+      },
+      {
+        name: "CK",
+        projectID: 4639710178443264,
+      },
+    ];
+  }
+  createExperimentScaffolding(brand, expID, expName, locales, numVariants);
 });
 
 // scaffold experiment in IDE
 const createExperimentScaffolding = (
-  {brands,
+  brand,
   expID,
   expName,
   locales,
-  numVariants}
+  numVariants
 ) => {
   numVariants = parseInt(numVariants);
 
-  brands.forEach((brand) => {
+  brand.forEach((b) => {
     // create brand dir
-    fs.mkdirSync(`./experiments/${expID}/${brand.name}`, {
+    fs.mkdirSync(`./experiments/${expID}/${b.name}`, {
       recursive: true,
     });
 
-    fs.mkdirSync(`./experiments/${expID}/${brand.name}/variations`, {
+    fs.mkdirSync(`./experiments/${expID}/${b.name}/variations`, {
       recursive: true,
     });
 
     for (let i = 0; i < numVariants; i++) {
       // create variant dir
       fs.mkdirSync(
-        `./experiments/${expID}/${brand.name}/variations/variation${i}`,
+        `./experiments/${expID}/${b.name}/variations/variation${i}`,
         {
           recursive: true,
         }
@@ -153,14 +117,14 @@ const createExperimentScaffolding = (
 
       // create variant files inside variant dir
       fs.writeFile(
-        `./experiments/${expID}/${brand.name}/variations/variation${i}/index.js`,
+        `./experiments/${expID}/${b.name}/variations/variation${i}/index.js`,
         "",
         (err, res) => {
           if (err) console.log(err);
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${brand.name}/variations/variation${i}/index.css`,
+        `./experiments/${expID}/${b.name}/variations/variation${i}/index.css`,
         "",
         (err, res) => {
           if (err) console.log(err);
@@ -168,18 +132,18 @@ const createExperimentScaffolding = (
       );
 
       // create shared folder and files
-      fs.mkdirSync(`./experiments/${expID}/${brand.name}/sharedCode`, {
+      fs.mkdirSync(`./experiments/${expID}/${b.name}/sharedCode`, {
         recursive: true,
       });
       fs.writeFile(
-        `./experiments/${expID}/${brand.name}/sharedCode/shared.js`,
+        `./experiments/${expID}/${b.name}/sharedCode/shared.js`,
         "",
         (err, res) => {
           if (err) console.log(err);
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${brand.name}/sharedCode/shared.css`,
+        `./experiments/${expID}/${b.name}/sharedCode/shared.css`,
         "",
         (err, res) => {
           if (err) console.log(err);
@@ -187,26 +151,39 @@ const createExperimentScaffolding = (
       );
 
       // create targeting folder and files
-      fs.mkdirSync(`./experiments/${expID}/${brand.name}/targeting`, {
+      fs.mkdirSync(`./experiments/${expID}/${b.name}/targeting`, {
         recursive: true,
       });
       fs.writeFile(
-        `./experiments/${expID}/${brand.name}/targeting/callback.js`,
-        "",
+        `./experiments/${expID}/${b.name}/targeting/callback.js`,
+        `function callback(activate, options) {}`,
         (err, res) => {
           if (err) console.log(err);
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${brand.name}/targeting/audiences.json`,
-        "",
+        `./experiments/${expID}/${b.name}/targeting/audiences.json`,
+        `{
+          "qa": true,
+          "desktop": false,
+          "mobile": false
+        }`,
         (err, res) => {
           if (err) console.log(err);
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${brand.name}/targeting/urls.js`,
+        `./experiments/${expID}/${b.name}/targeting/urls.js`,
         "",
+        (err, res) => {
+          if (err) console.log(err);
+        }
+      );
+
+      // create custom goals file
+      fs.writeFile(
+        `./experiments/${expID}/${b.name}/customGoals.json`,
+        "[]",
         (err, res) => {
           if (err) console.log(err);
         }
@@ -217,11 +194,11 @@ const createExperimentScaffolding = (
         expID,
         expName,
         numVariants,
-        brand.name,
-        brand.projectID
+        b.name,
+        b.projectID
       );
       fs.writeFile(
-        `./experiments/${expID}/${brand.name}/config.json`,
+        `./experiments/${expID}/${b.name}/config.json`,
         config,
         (err, res) => {
           if (err) console.log(err);
@@ -247,8 +224,10 @@ const createConfigFile = (expID, expName, numVariants, brand, projectID) => {
     "id": "${expID}",
     "name": "${expName}",
     "brand": "${brand}",
+    "audiences": "./experiments/${expID}/${brand}/targeting/audiences.json",
     "variants": [${variants}],
     "activation": "callback.js",
+    "customGoals": "./experiments/${expID}/${brand}/customGoals.json",
     "projectID": ${projectID},
     "OptimizelyPageID": "",
     "OptimizelyExperimentID": ""
