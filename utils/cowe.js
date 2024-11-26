@@ -70,6 +70,40 @@ const getCustomCode = async (id, brand, variants, activation) => {
   return result;
 };
 
+
+const getAudiences = async (path) => {
+  /* OPTLY AUDIENCE ID
+    - QA = 6161659085979648
+    - Destop = 6533414275252224
+    - Mobile = 4873116552265728
+  */
+  const audiences = await fsp.readFile(path, "binary");
+  if (audiences) {
+    const audienceObj = JSON.parse(audiences);
+    let optimizelyAudiences = [
+      "and"
+    ]
+    if (audienceObj.qa) {
+      optimizelyAudiences.push({
+        "audience_id": 6161659085979648
+      });
+    }
+    if (audienceObj.desktop) {
+      optimizelyAudiences.push({
+        "audience_id": 6533414275252224
+      });
+    }
+    if (audienceObj.mobile) {
+      optimizelyAudiences.push({
+        "audience_id": 4873116552265728
+      });
+    }
+
+    optimizelyAudiences = JSON.stringify(optimizelyAudiences);
+    return optimizelyAudiences;
+  }
+};
+
 const createOptimizelyPage = async (expName, projectID, activation) => {
   if (expName && projectID) {
     const body = {
@@ -149,6 +183,7 @@ const createOptimizelyExperiment = async (
   expName,
   pageID,
   projectID,
+  audiences,
   variants,
   sharedCode
 ) => {
@@ -164,6 +199,7 @@ const createOptimizelyExperiment = async (
         winning_direction: "increasing",
       },
     ],
+    audience_conditions: audiences,
     schedule: { time_zone: "UTC" },
     type: "a/b",
     description: "description placeholder",
@@ -227,6 +263,7 @@ const cowe = async () => {
     const configFile = await getConfigFile(expID, brand);
     const {
       name,
+      audiences,
       variants,
       activation,
       projectID,
@@ -242,6 +279,8 @@ const cowe = async () => {
         variants,
         activation
       );
+
+      const optlyAudiences = await getAudiences(audiences);
       
       if (!OptimizelyPageID) {
         console.log(`Creating page for ${expID} in Optimizely...`);
@@ -258,6 +297,7 @@ const cowe = async () => {
               expName,
               page.id,
               projectID,
+              optlyAudiences,
               customCode.variants,
               customCode.sharedCode
             );
