@@ -15,7 +15,6 @@ const getUserInput = () => {
     return userInput;
 }
 
-
 const getConfigFile = async (expID, brand) => {
   let configFile = await fsp.readFile(
     `./experiments/${expID}/${brand}/config.json`,
@@ -133,6 +132,7 @@ const getCustomGoals = async (expID, brand) => {
 };
 
 const createOptimizelyPage = async (expName, projectID, activation) => {
+  console.log("creating optly page")
   if (expName && projectID) {
     const body = {
       archived: false,
@@ -143,7 +143,7 @@ const createOptimizelyPage = async (expName, projectID, activation) => {
       project_id: projectID,
       activation_type: "callback",
     };
-
+    console.log("page req body = ", body);
     const optimizelyPage = await postToOptimizely(
       body,
       "https://api.optimizely.com/v2/pages"
@@ -244,7 +244,7 @@ const createOptimizelyExperiment = async (
   if (goals.length) {
     body.metrics = goals;
   }
-  console.log(body);
+  // console.log("exp body = ", body);
 
   const optimizelyExp = await postToOptimizely(
     body,
@@ -290,13 +290,12 @@ const updateConfigFile = (expID, brand, configFile, key, resourceID) => {
   );
 };
 
-const cowe = async () => {
-  const userInput = getUserInput();
-  if (userInput) {
-    const { expID, brand } = userInput;
-    const configFile = await getConfigFile(expID, brand);
-    const {
+const buildExp = async (configFile) => {
+  console.log("building experiment... ");
+      const {
       name,
+      id,
+      brand,
       audiences,
       variants,
       activation,
@@ -305,51 +304,64 @@ const cowe = async () => {
       OptimizelyPageID,
       OptimizelyExperimentID,
     } = configFile;
+  const customCode = await getCustomCode(
+    id,
+    brand,
+    variants,
+    activation
+  );
+  
+  
+  const optlyAudiences = await getAudiences(audiences, brand);
+  const optlyGoals = await getCustomGoals(id, brand);
+  const builtExperiment = {
+    id,
+    name,
+    projectID,
+    variantCode: customCode.variants,
+    sharedCode: customCode.sharedCode,
+    callback: customCode.activation,
+    optlyAudiences,
+    optlyGoals
+  }
 
-    if (!OptimizelyExperimentID) {
-      const expName = `${expID} - ${name}`;
-      const customCode = await getCustomCode(
-        expID,
-        brand,
-        variants,
-        activation
-      );
+  
+  return builtExperiment;
+}
 
-      const optlyAudiences = await getAudiences(audiences, brand);
-      const optlyGoals = await getCustomGoals(expID, brand);
-      
-      console.log(optlyAudiences);
-      if (!OptimizelyPageID) {
-        console.log(`Creating page for ${expID} in Optimizely...`);
-        const page = await createOptimizelyPage(
-          expName,
-          projectID,
-          customCode.activation
-        );
-        // const page = {id: 293090843, code: "", message: ""};
-        if (page.id) {
-            updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', page.id);
-            console.log(`Page ${page.id} for ${expID} created in Optimizely.`);
-            console.log(`Creating experiment for ${expID} in Optimizely...`);
-            const experiment = await createOptimizelyExperiment(
-              expName,
-              page.id,
-              projectID,
-              optlyAudiences,
-              optlyGoals,
-              customCode.variants,
-              customCode.sharedCode
+const cowe = async () => {
+  const userInput = getUserInput();
+  if (userInput) {
+    const { expID, brand } = userInput;
+    const configFile = await getConfigFile(expID, brand);
+    const expBuild = await buildExp(configFile);
+
+    if (!configFile.OptimizelyExperimentID) {
+    //   const expName = `${expID} - ${name}`;
+      if (!configFile.OptimizelyPageID) {
+          const optlyPage = await createOptimizelyPage(`${expBuild.id} - ${expBuild.name}`,expBuild.projectID,expBuild.callback);
+          if (optlyPage && optlyPage.id) {
+            // updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', page.id);
+            const optlyExperiment = await createOptimizelyExperiment(
+              `${expBuild.id} - ${expBuild.name}`,
+              optlyPage.id,
+              expBuild.projectID,
+              expBuild.optlyAudiences,
+              expBuild.optlyGoals,
+              expBuild.variantCode,
+              expBuild.sharedCode
             );
-            if (experiment.id) {
-              console.log(`Experiment ${experiment.id} for ${expID} created in Optimizely.`);
-              updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', experiment.id);
+            console.log("created optly exp = ", optlyExperiment);
+            if (optlyExperiment.id) {
+              console.log(`Experiment ${optlyExperiment.id} for ${expID} created in Optimizely.`);
+              // updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
             } else {
               // handle error
-              console.log(`error of type ${experiment.code}. The following issue occurred: ${experiment.message}`);
+              console.log(`error of type ${optlyExperiment.code}. The following issue occurred: ${optlyExperiment.message}`);
             }
         } else {
           // handle error
-          console.log(`error of type ${page.code}. The following issue occurred: ${page.message}`);
+          console.log(`error of type ${optlyPage.code}. The following issue occurred: ${optlyPage.message}`);
         }
       } else {
         console.log(
