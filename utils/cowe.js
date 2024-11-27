@@ -4,13 +4,17 @@ const args = process.argv;
 require("dotenv").config();
 const { OPTLY_TOKEN } = process.env;
 
-const userInput =
+const getUserInput = () => {
+  const userInput =
   args[2] &&
   args[2].toUpperCase().includes("CX") &&
   args[3] &&
   (args[3].toUpperCase() === "TH" || args[3].toUpperCase() === "CK")
     ? { expID: args[2], brand: args[3] }
     : false;
+    return userInput;
+}
+
 
 const getConfigFile = async (expID, brand) => {
   let configFile = await fsp.readFile(
@@ -287,6 +291,7 @@ const updateConfigFile = (expID, brand, configFile, key, resourceID) => {
 };
 
 const cowe = async () => {
+  const userInput = getUserInput();
   if (userInput) {
     const { expID, brand } = userInput;
     const configFile = await getConfigFile(expID, brand);
