@@ -337,11 +337,10 @@ const cowe = async () => {
     const expBuild = await buildExp(configFile);
 
     if (!configFile.OptimizelyExperimentID) {
-    //   const expName = `${expID} - ${name}`;
       if (!configFile.OptimizelyPageID) {
           const optlyPage = await createOptimizelyPage(`${expBuild.id} - ${expBuild.name}`,expBuild.projectID,expBuild.callback);
           if (optlyPage && optlyPage.id) {
-            // updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', page.id);
+            updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', optlyPage.id);
             const optlyExperiment = await createOptimizelyExperiment(
               `${expBuild.id} - ${expBuild.name}`,
               optlyPage.id,
@@ -351,10 +350,8 @@ const cowe = async () => {
               expBuild.variantCode,
               expBuild.sharedCode
             );
-            console.log("created optly exp = ", optlyExperiment);
             if (optlyExperiment.id) {
-              console.log(`Experiment ${optlyExperiment.id} for ${expID} created in Optimizely.`);
-              // updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
+              updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
             } else {
               // handle error
               console.log(`error of type ${optlyExperiment.code}. The following issue occurred: ${optlyExperiment.message}`);
