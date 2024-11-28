@@ -16,11 +16,19 @@ const getUserInput = () => {
 }
 
 const getConfigFile = async (expID, brand) => {
+  console.log(`Getting config file for expID:${expID} brand:${brand}`)
   let configFile = await fsp.readFile(
     `./experiments/${expID}/${brand}/config.json`,
     "binary"
-  );
-  configFile = JSON.parse(configFile);
+  )
+  .then(res => {
+    parsedConfig = JSON.parse(res);
+    return parsedConfig;
+  })
+  .catch(e => {
+    console.log(`Config file not found for expID:${expID} brand:${brand}. Please check that the expID and brand are valid.`);
+    return false;
+  });
   return configFile;
 };
 
@@ -132,7 +140,7 @@ const getCustomGoals = async (expID, brand) => {
 };
 
 const createOptimizelyPage = async (expName, projectID, activation) => {
-  console.log("creating optly page")
+  console.log(`Creating Optimizely Page for ${expName}`)
   if (expName && projectID) {
     const body = {
       archived: false,
@@ -143,7 +151,6 @@ const createOptimizelyPage = async (expName, projectID, activation) => {
       project_id: projectID,
       activation_type: "callback",
     };
-    console.log("page req body = ", body);
     const optimizelyPage = await postToOptimizely(
       body,
       "https://api.optimizely.com/v2/pages"
@@ -244,7 +251,6 @@ const createOptimizelyExperiment = async (
   if (goals.length) {
     body.metrics = goals;
   }
-  // console.log("exp body = ", body);
 
   const optimizelyExp = await postToOptimizely(
     body,
@@ -254,6 +260,7 @@ const createOptimizelyExperiment = async (
 };
 
 const postToOptimizely = async (reqBody, endpoint) => {
+  console.log("positing to optly...")
   const options = {
     method: "POST",
     headers: {
@@ -264,13 +271,9 @@ const postToOptimizely = async (reqBody, endpoint) => {
     body: JSON.stringify(reqBody),
   };
 
-  try {
-    const res = await fetch(endpoint, options);
+    const res = await fetch(endpoint, options)
     const resource = await res.json();
-    return resource;
-  } catch(error) {
-    console.log("error in try catch ", error)
-  }
+    return resource && resource.id ? resource : false;
 };
 
 const updateConfigFile = (expID, brand, configFile, key, resourceID) => {
@@ -284,14 +287,14 @@ const updateConfigFile = (expID, brand, configFile, key, resourceID) => {
     (err) => {
       if (err) console.log(err);
       else {
-        console.log("File written successfully\n");
+        console.log(`The ${key} in the config file for expID:${expID} brand:${brand} has been updated.`);
       }
     }
   );
 };
 
 const buildExp = async (configFile) => {
-  console.log("building experiment... ");
+  console.log("Building experiment... ");
       const {
       name,
       id,
@@ -334,41 +337,44 @@ const cowe = async () => {
   if (userInput) {
     const { expID, brand } = userInput;
     const configFile = await getConfigFile(expID, brand);
-    const expBuild = await buildExp(configFile);
+    if (configFile) {
+      const expBuild = await buildExp(configFile);
 
-    if (!configFile.OptimizelyExperimentID) {
-      if (!configFile.OptimizelyPageID) {
-          const optlyPage = await createOptimizelyPage(`${expBuild.id} - ${expBuild.name}`,expBuild.projectID,expBuild.callback);
-          if (optlyPage && optlyPage.id) {
-            updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', optlyPage.id);
-            const optlyExperiment = await createOptimizelyExperiment(
-              `${expBuild.id} - ${expBuild.name}`,
-              optlyPage.id,
-              expBuild.projectID,
-              expBuild.optlyAudiences,
-              expBuild.optlyGoals,
-              expBuild.variantCode,
-              expBuild.sharedCode
-            );
-            if (optlyExperiment.id) {
-              updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
-            } else {
-              // handle error
-              console.log(`error of type ${optlyExperiment.code}. The following issue occurred: ${optlyExperiment.message}`);
-            }
+      if (!configFile.OptimizelyExperimentID) {
+        if (!configFile.OptimizelyPageID) {
+            const optlyPage = await createOptimizelyPage(`${expBuild.id} - ${expBuild.name}`,expBuild.projectID,expBuild.callback);
+            if (optlyPage && optlyPage.id) {
+              updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', optlyPage.id);
+              const optlyExperiment = await createOptimizelyExperiment(
+                `${expBuild.id} - ${expBuild.name}`,
+                optlyPage.id,
+                expBuild.projectID,
+                expBuild.optlyAudiences,
+                expBuild.optlyGoals,
+                expBuild.variantCode,
+                expBuild.sharedCode
+              );
+              if (optlyExperiment.id) {
+                updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
+              } else {
+                // handle error
+                console.log(`error of type ${optlyExperiment.code}. The following issue occurred: ${optlyExperiment.message}`);
+              }
+          } else {
+            // handle error
+            console.log("error creating optly page");
+            // console.log(`error of type ${optlyPage.code}. The following issue occurred: ${optlyPage.message}`);
+          }
         } else {
-          // handle error
-          console.log(`error of type ${optlyPage.code}. The following issue occurred: ${optlyPage.message}`);
+          console.log(
+            "A pre-existing ID for an Optimizely page was found in the config file"
+          );
         }
       } else {
         console.log(
-          "A pre-existing ID for an Optimizely page was found in the config file"
+          "A pre-existing ID for an Optimizely experiment was found in the config file"
         );
       }
-    } else {
-      console.log(
-        "A pre-existing ID for an Optimizely experiment was found in the config file"
-      );
     }
   } else {
     console.log(
