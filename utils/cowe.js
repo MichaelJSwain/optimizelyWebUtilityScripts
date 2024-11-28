@@ -155,6 +155,9 @@ const createOptimizelyPage = async (expName, projectID, activation) => {
       body,
       "https://api.optimizely.com/v2/pages"
     );
+    if (!optimizelyPage.success) {
+      console.log(`Unable to create Optimizely page. ${optimizelyPage.code} - ${optimizelyPage.message}`);
+    }
     return optimizelyPage;
   }
 };
@@ -256,11 +259,13 @@ const createOptimizelyExperiment = async (
     body,
     "https://api.optimizely.com/v2/experiments"
   );
+  if (!optimizelyExp.success) {
+    console.log(`Unable to create Optimizely experiment. ${optimizelyExp.code} - ${optimizelyExp.message}`);
+  }
   return optimizelyExp;
 };
 
 const postToOptimizely = async (reqBody, endpoint) => {
-  console.log("positing to optly...")
   const options = {
     method: "POST",
     headers: {
@@ -273,7 +278,7 @@ const postToOptimizely = async (reqBody, endpoint) => {
 
     const res = await fetch(endpoint, options)
     const resource = await res.json();
-    return resource && resource.id ? resource : false;
+    return resource && resource.id ? {...resource, success: true} : {...resource, success: false};
 };
 
 const updateConfigFile = (expID, brand, configFile, key, resourceID) => {
@@ -285,7 +290,7 @@ const updateConfigFile = (expID, brand, configFile, key, resourceID) => {
       encoding: "utf8",
     },
     (err) => {
-      if (err) console.log(err);
+      if (err) console.log(`Unable to update the ${key} in config file for expID:${expID} brand:${brand}`, err);
       else {
         console.log(`The ${key} in the config file for expID:${expID} brand:${brand} has been updated.`);
       }
@@ -354,16 +359,9 @@ const cowe = async () => {
                 expBuild.variantCode,
                 expBuild.sharedCode
               );
-              if (optlyExperiment.id) {
+              if (optlyExperiment && optlyExperiment.id) {
                 updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
-              } else {
-                // handle error
-                console.log(`error of type ${optlyExperiment.code}. The following issue occurred: ${optlyExperiment.message}`);
               }
-          } else {
-            // handle error
-            console.log("error creating optly page");
-            // console.log(`error of type ${optlyPage.code}. The following issue occurred: ${optlyPage.message}`);
           }
         } else {
           console.log(
