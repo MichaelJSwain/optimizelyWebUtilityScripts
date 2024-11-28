@@ -274,7 +274,8 @@ const updateOptimizelyExperiment = async (configFile, expBuild) => {
     name: `${expBuild.id} - ${expBuild.name}`,
     variations: variantActions,
     changes: expBuild.sharedCode,
-    audience_conditions: expBuild.optlyAudiences
+    audience_conditions: expBuild.optlyAudiences,
+    metrics: expBuild.optlyGoals
   }
 
   const update = await postToOptimizely(body, endpoint);
