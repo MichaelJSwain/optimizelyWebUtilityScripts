@@ -228,6 +228,8 @@ const createOptimizelyExperiment = async (
 ) => {
   const variantsArray = createVariantActions(pageID, variants);
 
+  const prefixedExpName = `[QA] - ${expName}`;
+
   const body = {
     audience_conditions: "everyone",
     metrics: [
@@ -242,7 +244,7 @@ const createOptimizelyExperiment = async (
     schedule: { time_zone: "UTC" },
     type: "a/b",
     description: "description placeholder",
-    name: expName,
+    name: prefixedExpName,
     page_ids: [pageID],
     project_id: projectID,
     traffic_allocation: 10000,
@@ -343,30 +345,28 @@ const cowe = async () => {
     const { expID, brand } = userInput;
     const configFile = await getConfigFile(expID, brand);
     if (configFile) {
-      const expBuild = await buildExp(configFile);
+      const {id, name, projectID, callback, optlyAudiences, optlyGoals, variantCode, sharedCode} = await buildExp(configFile);
 
       if (!configFile.OptimizelyExperimentID) {
-        if (!configFile.OptimizelyPageID) {
-            const optlyPage = await createOptimizelyPage(`${expBuild.id} - ${expBuild.name}`,expBuild.projectID,expBuild.callback);
-            if (optlyPage && optlyPage.id) {
-              updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', optlyPage.id);
+        const expName = `${id} - ${name}`;
+        let optlyPageID = configFile.OptimizelyPageID || await createOptimizelyPage(expName, projectID, callback);
+        optlyPageID = optlyPageID.id ? optlyPageID.id : optlyPageID;
+        
+        if (optlyPageID) {
+              updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', optlyPageID);
               const optlyExperiment = await createOptimizelyExperiment(
-                `${expBuild.id} - ${expBuild.name}`,
-                optlyPage.id,
-                expBuild.projectID,
-                expBuild.optlyAudiences,
-                expBuild.optlyGoals,
-                expBuild.variantCode,
-                expBuild.sharedCode
+                expName,
+                optlyPageID,
+                projectID,
+                optlyAudiences,
+                optlyGoals,
+                variantCode,
+                sharedCode
               );
               if (optlyExperiment && optlyExperiment.id) {
                 updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
               }
-          }
-        } else {
-          console.log(
-            "A pre-existing ID for an Optimizely page was found in the config file"
-          );
+          
         }
       } else {
         console.log(
