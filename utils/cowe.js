@@ -126,12 +126,12 @@ const getCustomGoals = async (expID, brand) => {
   const parsedCustomGoals = JSON.parse(customGoals);
   if (parsedCustomGoals && parsedCustomGoals.length) {
     const optimizelyMetrics = parsedCustomGoals.map(goal => {
-      return {
+      return goal.id ? {
         event_id: goal.id,
         aggregator: 'unique',
         scope: 'visitor',
         winning_direction: 'increasing'
-      }
+      } : goal;
     });
     return optimizelyMetrics;
   } else {
@@ -232,14 +232,7 @@ const createOptimizelyExperiment = async (
 
   const body = {
     audience_conditions: "everyone",
-    metrics: [
-      {
-        aggregator: "sum",
-        field: "revenue",
-        scope: "visitor",
-        winning_direction: "increasing",
-      },
-    ],
+    metrics: goals,
     audience_conditions: audiences,
     schedule: { time_zone: "UTC" },
     type: "a/b",
