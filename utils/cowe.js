@@ -9,7 +9,7 @@ const getUserInput = () => {
   args[2] &&
   args[2].toUpperCase().includes("CX") &&
   args[3] &&
-  (args[3].toUpperCase() === "TH" || args[3].toUpperCase() === "CK")
+  (args[3].toUpperCase() === "TH" || args[3].toUpperCase() === "CK" || args[3].toUpperCase() === "DB")
     ? { expID: args[2], brand: args[3] }
     : false;
     return userInput;
@@ -152,7 +152,6 @@ const createOptimizelyPage = async (expName, projectID, activation, urlCondition
       archived: false,
       category: "other",
       activation_code: `${activation}`,
-      conditions: urlConditions,
       edit_url: "https://uk.tommy.com/women",
       name: `${expName}`,
       project_id: projectID,
@@ -345,37 +344,42 @@ const cowe = async () => {
   const userInput = getUserInput();
   if (userInput) {
     const { expID, brand } = userInput;
-    const configFile = await getConfigFile(expID, brand);
-    if (configFile) {
-      const {id, name, projectID, callback, optlyAudiences, optlyGoals, variantCode, sharedCode, urlConditions} = await buildExp(configFile);
+    let brands = brand === "DB" ? ["TH", "CK"] : [brand];
 
-      if (!configFile.OptimizelyExperimentID) {
-        const expName = `${id} - ${name}`;
-        let optlyPageID = configFile.OptimizelyPageID || await createOptimizelyPage(expName, projectID, callback, urlConditions);
-        optlyPageID = optlyPageID.id ? optlyPageID.id : optlyPageID;
-        
-        if (optlyPageID) {
-              updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', optlyPageID);
-              const optlyExperiment = await createOptimizelyExperiment(
-                expName,
-                optlyPageID,
-                projectID,
-                optlyAudiences,
-                optlyGoals,
-                variantCode,
-                sharedCode
-              );
-              if (optlyExperiment && optlyExperiment.id) {
-                updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
-              }
+    for (const brand of brands) {
+      const configFile = await getConfigFile(expID, brand);
+      if (configFile) {
+        const {id, name, projectID, callback, optlyAudiences, optlyGoals, variantCode, sharedCode, urlConditions} = await buildExp(configFile);
+  
+        if (!configFile.OptimizelyExperimentID) {
+          const expName = `${id} - ${name}`;
+          let optlyPageID = configFile.OptimizelyPageID || await createOptimizelyPage(expName, projectID, callback, urlConditions);
+          optlyPageID = optlyPageID.id ? optlyPageID.id : optlyPageID;
           
+          if (optlyPageID) {
+                updateConfigFile(expID, brand, configFile, 'OptimizelyPageID', optlyPageID);
+                const optlyExperiment = await createOptimizelyExperiment(
+                  expName,
+                  optlyPageID,
+                  projectID,
+                  optlyAudiences,
+                  optlyGoals,
+                  variantCode,
+                  sharedCode
+                );
+                if (optlyExperiment && optlyExperiment.id) {
+                  updateConfigFile(expID, brand, configFile, 'OptimizelyExperimentID', optlyExperiment.id);
+                }
+            
+          }
+        } else {
+          console.log(
+            "A pre-existing ID for an Optimizely experiment was found in the config file"
+          );
         }
-      } else {
-        console.log(
-          "A pre-existing ID for an Optimizely experiment was found in the config file"
-        );
       }
     }
+
   } else {
     console.log(
       "please specify the ID and brand for the Optimizely experiment you'd like to create e.g. CX100 TH"
