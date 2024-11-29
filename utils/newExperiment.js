@@ -183,7 +183,9 @@ const createExperimentScaffolding = (
       // create custom goals file
       fs.writeFile(
         `./experiments/${expID}/${b.name}/customGoals.json`,
-        "[]",
+        `[
+          {"aggregator":"sum","field":"revenue","scope":"visitor","winning_direction":"increasing"}
+        ]`,
         (err, res) => {
           if (err) console.log(err);
         }
