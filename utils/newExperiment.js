@@ -173,8 +173,15 @@ const createExperimentScaffolding = (
         }
       );
       fs.writeFile(
-        `./experiments/${expID}/${b.name}/targeting/urls.js`,
-        "",
+        `./experiments/${expID}/${b.name}/targeting/urls.json`,
+        `[
+          "and",
+          {
+              "type": "url",
+              "match_type": "substring",
+              "value": "uk.tommy.com"
+          }
+      ]`,
         (err, res) => {
           if (err) console.log(err);
         }
