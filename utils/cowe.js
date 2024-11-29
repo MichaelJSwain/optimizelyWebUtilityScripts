@@ -121,6 +121,12 @@ const getAudiences = async (path, brand) => {
   }
 };
 
+const getURLconditions = async (expID, brand) => {
+  const urlConditions = await fsp.readFile(`./experiments/${expID}/${brand}/targeting/urls.json`, "binary");
+  const parsedUrlConditions = JSON.parse(urlConditions);
+  return parsedUrlConditions;
+};
+
 const getCustomGoals = async (expID, brand) => {
   const customGoals = await fsp.readFile(`./experiments/${expID}/${brand}/customGoals.json`, "binary");
   const parsedCustomGoals = JSON.parse(customGoals);
@@ -139,13 +145,14 @@ const getCustomGoals = async (expID, brand) => {
   }
 };
 
-const createOptimizelyPage = async (expName, projectID, activation) => {
+const createOptimizelyPage = async (expName, projectID, activation, urlConditions) => {
   console.log(`Creating Optimizely Page for ${expName}`)
   if (expName && projectID) {
     const body = {
       archived: false,
       category: "other",
       activation_code: `${activation}`,
+      conditions: urlConditions,
       edit_url: "https://uk.tommy.com/women",
       name: `${expName}`,
       project_id: projectID,
@@ -317,6 +324,7 @@ const buildExp = async (configFile) => {
   
   const optlyAudiences = await getAudiences(audiences, brand);
   const optlyGoals = await getCustomGoals(id, brand);
+  const urlConditions = await getURLconditions(id, brand);
   const builtExperiment = {
     id,
     name,
@@ -325,7 +333,8 @@ const buildExp = async (configFile) => {
     sharedCode: customCode.sharedCode,
     callback: customCode.activation,
     optlyAudiences,
-    optlyGoals
+    optlyGoals,
+    urlConditions
   }
 
   
@@ -338,11 +347,11 @@ const cowe = async () => {
     const { expID, brand } = userInput;
     const configFile = await getConfigFile(expID, brand);
     if (configFile) {
-      const {id, name, projectID, callback, optlyAudiences, optlyGoals, variantCode, sharedCode} = await buildExp(configFile);
+      const {id, name, projectID, callback, optlyAudiences, optlyGoals, variantCode, sharedCode, urlConditions} = await buildExp(configFile);
 
       if (!configFile.OptimizelyExperimentID) {
         const expName = `${id} - ${name}`;
-        let optlyPageID = configFile.OptimizelyPageID || await createOptimizelyPage(expName, projectID, callback);
+        let optlyPageID = configFile.OptimizelyPageID || await createOptimizelyPage(expName, projectID, callback, urlConditions);
         optlyPageID = optlyPageID.id ? optlyPageID.id : optlyPageID;
         
         if (optlyPageID) {
