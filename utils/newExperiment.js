@@ -211,6 +211,26 @@ const createExperimentScaffolding = (
           if (err) console.log(err);
         }
       );
+      fs.writeFile(
+        `./experiments/${expID}/${brand.name}/customGoals.json`,
+        `[
+          {"aggregator":"sum","field":"revenue","scope":"visitor","winning_direction":"increasing"}
+        ]`,
+        (err, res) => {
+          if (err) console.log(err);
+        }
+      );
+      fs.writeFile(
+        `./experiments/${expID}/${brand.name}/targeting/audiences.json`,
+        `{
+            "qa": true,
+            "desktop": false,
+            "mobile": true
+          }`,
+        (err, res) => {
+          if (err) console.log(err);
+        }
+      );
 
       //   create config files
       const config = createConfigFile(
@@ -252,7 +272,10 @@ const createConfigFile = (expID, expName, numVariants, brand, projectID) => {
       "css": "./experiments/${expID}/${brand}/sharedCode/shared.css"
     },
     "variants": [${variants}],
+    "audiences": "./experiments/${expID}/${brand}/targeting/audiences.json",
     "activation": "./experiments/${expID}/${brand}/targeting/callback.js",
+    "customGoals": "./experiments/${expID}/${brand}/customGoals.json",
+    "urls": "./experiments/${expID}/${brand}/targeting/urls.js",
     "projectID": ${projectID},
     "OptimizelyPageID": "",
     "OptimizelyExperimentID": ""
