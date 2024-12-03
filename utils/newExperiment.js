@@ -83,7 +83,7 @@ const getBrandDetails = (brand) => {
         brand = [
         {
             name: "CK",
-            projectID: 14193350179,
+            projectID: 4639710178443264,
         },
         ];
     } else {
@@ -94,7 +94,7 @@ const getBrandDetails = (brand) => {
         },
         {
             name: "CK",
-            projectID: 14193350179,
+            projectID: 4639710178443264,
         },
         ];
     }
@@ -192,7 +192,7 @@ const createExperimentScaffolding = (
       });
       fs.writeFile(
         `./experiments/${expID}/${brand.name}/targeting/callback.js`,
-        "",
+        `function callback(activate, options) {}`,
         (err, res) => {
           if (err) console.log(err);
         }
@@ -225,7 +225,7 @@ const createExperimentScaffolding = (
         `{
             "qa": true,
             "desktop": false,
-            "mobile": true
+            "mobile": false
           }`,
         (err, res) => {
           if (err) console.log(err);
