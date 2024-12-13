@@ -7,8 +7,10 @@ require("dotenv").config();
 const { OPTLY_TOKEN } = process.env;
 const args = process.argv;
 
-const projectID_TH = 14193350179;
-const projectID_CK = 4639710178443264;
+const projectID = {
+  TH: 14193350179,
+  CK: 4639710178443264
+}
 
 const questions = [
     {
@@ -69,41 +71,16 @@ prompt(questions).then(async (answers) => {
     console.log("api key = ", apiKeyForGoal);
     console.log("brand = ", brand);
     console.log("addGoalToExp = ", addGoalToExp);
+    let brands = brand === "DB" ? ["TH", "CK"] : [brand];
 
-    if (brand.toUpperCase() === "TH") {
-        
-        const event = await postToOptimizely(reqBody, `https://api.optimizely.com/v2/projects/${projectID_TH}/custom_events`);
-        console.log("event = ", event);
-        if (event && event.id && addGoalToExp.toUpperCase() === "Y") {
-            console.log("adding event to experiment... ")
-            addToExpCustomGoals(expID, brand, event);
-        }
-    } else if (brand.toUpperCase() === "CK") {
-        const event = await postToOptimizely(reqBody, `https://api.optimizely.com/v2/projects/${projectID_CK}/custom_events`);
-        console.log("event = ", event);
-        if (event && event.id && addGoalToExp.toUpperCase() === "Y") {
-            console.log("adding event to experiment... ")
-            addToExpCustomGoals(expID, brand, event);
-        }
-    } else {
-        // postToOptimizely(projectID_TH, reqBody);
-        // postToOptimizely(projectID_CK, reqBody);
+    for (const brand of brands) {
+      const event = await postToOptimizely(reqBody, `https://api.optimizely.com/v2/projects/${projectID[brand]}/custom_events`);
+      console.log("event = ", event);
+      if (event && event.id && addGoalToExp.toUpperCase() === "Y") {
+          console.log("adding event to experiment... ")
+          addToExpCustomGoals(expID, brand, event);
+      }
     }
-
-    // const options = {
-    //     method: 'POST',
-    //     headers: {
-    //       accept: 'application/json',
-    //       'content-type': 'application/json',
-    //       authorization: OPTLY_TOKEN
-    //     },
-    //     body: JSON.stringify({key: apiKeyForGoal, name: goalName})
-    //   };
-      
-    //   fetch(`https://api.optimizely.com/v2/projects/${projectID}/custom_events`, options)
-    //     .then(res => res.json())
-    //     .then(res => console.log(res))
-    //     .catch(err => console.error(err));
 });
 
 const addToExpCustomGoals = async (expID, brand, event) => {
@@ -148,4 +125,3 @@ const postToOptimizely = async (reqBody, endpoint) => {
       console.log("error in try catch ", error)
     }
   };
-  
