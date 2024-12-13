@@ -44,11 +44,11 @@ const getCustomCode = async (id, brand, variants, activation) => {
   for (const variant of variants) {
     const v = { name: variant.name, js: "", css: "" };
 
-    const js = await fsp.readFile(`./experiments${variant.js}`, "binary");
+    const js = await fsp.readFile(`${variant.js}`, "binary");
     const parsedJS = validateCustomCode(js);
     v.js = parsedJS;
 
-    const css = await fsp.readFile(`./experiments${variant.css}`, "binary");
+    const css = await fsp.readFile(`${variant.css}`, "binary");
     const parsedCSS = validateCustomCode(css);
     v.css = parsedCSS;
 
@@ -57,7 +57,7 @@ const getCustomCode = async (id, brand, variants, activation) => {
 
   // get activation code
   const activationCallback = await fsp.readFile(
-    `./experiments/${id}/${brand}/targeting/${activation}`,
+    `${activation}`,
     "binary"
   );
   console.log("activation callback => ", activationCallback);
@@ -122,9 +122,8 @@ const getAudiences = async (path, brand) => {
 };
 
 const getURLconditions = async (expID, brand) => {
-  const urlConditions = await fsp.readFile(`./experiments/${expID}/${brand}/targeting/urls.json`, "binary");
-  const parsedUrlConditions = JSON.parse(urlConditions);
-  return parsedUrlConditions;
+  const urlConditions = await fsp.readFile(`./experiments/${expID}/${brand}/targeting/urls.js`, "binary");
+  return urlConditions;
 };
 
 const getCustomGoals = async (expID, brand) => {
@@ -168,7 +167,26 @@ const createOptimizelyPage = async (expName, projectID, activation, urlCondition
   }
 };
 
+const getTrafficAllocationPerVariant = (totalTrafficAllocation, variants) => {
+  const splitPerVariant = Math.trunc(totalTrafficAllocation / variants.length);
+  let remainder;
+  if (splitPerVariant * variants.length == totalTrafficAllocation) {
+      remainder = false;
+  } else {
+      remainder = totalTrafficAllocation - (splitPerVariant * (variants.length - 1));
+  }
+
+  const variantsWithTrafficAllocation = variants.map((variant, idx) => {
+      return {
+          ...variant,
+          trafficAllocation: !remainder || idx != (variants.length - 1) ? splitPerVariant : remainder
+      }
+  });
+  return variantsWithTrafficAllocation;
+};
+
 const createVariantActions = (pageID, variants) => {
+  variants = getTrafficAllocationPerVariant(10000, variants);
   const variantsArray = [];
 
   variants.forEach((variant) => {
@@ -202,13 +220,14 @@ const createVariantActions = (pageID, variants) => {
     const variantData = {
       name: variant.name,
       status: "active",
-      weight: Math.round(10000 / variants.length),
+      weight: variant.trafficAllocation,
       description: "variant description",
       archived: false,
       actions: variantActions,
     };
     variantsArray.push(variantData);
   });
+  console.log(variantsArray);
   return variantsArray;
 };
 const createSharedCode = (sharedJS, sharedCSS) => {
